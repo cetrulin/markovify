@@ -3,6 +3,9 @@ import json
 from .splitters import split_into_sentences
 from .chain import Chain, BEGIN, END
 from unidecode import unidecode
+import spacy
+
+spacy_nlp = spacy.load("en")
 
 DEFAULT_MAX_OVERLAP_RATIO = 0.7
 DEFAULT_MAX_OVERLAP_TOTAL = 15
@@ -196,3 +199,32 @@ class NewlineText(Text):
     """
     def sentence_split(self, text):
         return re.split(r"\s*\n\s*", text)
+
+
+# works on my machine...
+class SpacyPOSifiedText(Text):
+
+    def __init__(self, input_text, spacy_nlp, state_size=2, chain=None):
+        """
+        input_text: A string.
+        state_size: An integer, indicating the number of words in the model's state.
+        chain: A trained markovify.Chain instance for this text, if pre-processed.
+        """
+        self.input_text = spacy_nlp(input_text)
+        self.state_size = state_size
+        runs = list(self.generate_corpus(input_text))
+
+        # Rejoined text lets us assess the novelty of generated setences
+        self.rejoined_text = self.sentence_join(map(self.word_join, runs))
+        self.chain = chain or Chain(runs, state_size)
+
+    def word_split(self, sentence):
+        words = re.split(self.word_split_pattern, sentence)
+        words = [ "::".join(tag) for tag in nltk.pos_tag(words) ]
+        return words
+
+    def word_join(self, words):
+        sentence = " ".join(word.split("::")[0] for word in words)
+        return sentence
+
+
