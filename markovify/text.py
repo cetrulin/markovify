@@ -218,9 +218,8 @@ class SpacyPOSifiedText(Text):
         self.rejoined_text = self.sentence_join(map(self.word_join, runs))
         self.chain = chain or Chain(runs, state_size)
 
-    def word_split(self, sentence):
-        words = re.split(self.word_split_pattern, sentence)
-        words = [ "::".join(tag) for tag in nltk.pos_tag(words) ]
+    def word_split(self, input_text):
+        words = [word.text + "::" + word.tag_ for word in spacy_nlp(input_text)]
         return words
 
     def word_join(self, words):
